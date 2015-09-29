@@ -50,7 +50,7 @@ func newDHCP() *DHCP {
 
 // Allocate acquires an IP from a DHCP server for a specified container.
 // The acquired lease will be maintained until Release() is called.
-func (d *DHCP) Allocate(args *skel.CmdArgs, result *types.Result) error {
+func (d *DHCP) Allocate(args *skel.CmdArgs, result *types.AddResult) error {
 	conf := types.NetConf{}
 	if err := json.Unmarshal(args.StdinData, &conf); err != nil {
 		return fmt.Errorf("error parsing netconf: %v", err)

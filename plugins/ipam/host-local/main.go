@@ -22,10 +22,12 @@ import (
 )
 
 func main() {
-	skel.PluginMain(cmdAdd, cmdDel)
+	skel.PluginMain(plugin{})
 }
 
-func cmdAdd(args *skel.CmdArgs) error {
+type plugin struct{}
+
+func (_ plugin) Add(args *skel.CmdArgs) error {
 	ipamConf, err := LoadIPAMConfig(args.StdinData, args.Args)
 	if err != nil {
 		return err
@@ -54,13 +56,13 @@ func cmdAdd(args *skel.CmdArgs) error {
 		return err
 	}
 
-	r := &types.Result{
+	r := &types.AddResult{
 		IP4: ipConf,
 	}
 	return r.Print()
 }
 
-func cmdDel(args *skel.CmdArgs) error {
+func (_ plugin) Del(args *skel.CmdArgs) error {
 	ipamConf, err := LoadIPAMConfig(args.StdinData, args.Args)
 	if err != nil {
 		return err

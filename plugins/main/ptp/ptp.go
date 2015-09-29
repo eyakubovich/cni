@@ -45,9 +45,9 @@ type NetConf struct {
 	MTU    int  `json:"mtu"`
 }
 
-func setupContainerVeth(netns, ifName string, mtu int, pr *types.Result) (string, error) {
+func setupContainerVeth(netns, ifName string, mtu int, pr *types.AddResult) (string, error) {
 	// The IPAM result will be something like IP=192.168.3.5/24, GW=192.168.3.1.
-	// What we want is really a point-to-point link but veth does not support IFF_POINTOPONT.
+	// What we want is really a point-to-point link but veth does not support IFF_POINTOPOINT.
 	// Next best thing would be to let it ARP but set interface to 192.168.3.5/32 and
 	// add a route like "192.168.3.0/24 via 192.168.3.1 dev $ifName".
 	// Unfortunately that won't work as the GW will be outside the interface's subnet.
@@ -149,7 +149,9 @@ func setupHostVeth(vethName string, ipConf *types.IPConfig) error {
 	return nil
 }
 
-func cmdAdd(args *skel.CmdArgs) error {
+type plugin struct{}
+
+func (_ plugin) Add(args *skel.CmdArgs) error {
 	conf := NetConf{}
 	if err := json.Unmarshal(args.StdinData, &conf); err != nil {
 		return fmt.Errorf("failed to load netconf: %v", err)
@@ -188,7 +190,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 	return result.Print()
 }
 
-func cmdDel(args *skel.CmdArgs) error {
+func (_ plugin) Del(args *skel.CmdArgs) error {
 	conf := NetConf{}
 	if err := json.Unmarshal(args.StdinData, &conf); err != nil {
 		return fmt.Errorf("failed to load netconf: %v", err)
@@ -215,6 +217,10 @@ func cmdDel(args *skel.CmdArgs) error {
 	return ipam.ExecDel(conf.IPAM.Type, args.StdinData)
 }
 
+func (_ plugin) Status(args *skel.CmdArgs) error {
+	return skel.CmdStatus(args)
+}
+
 func main() {
-	skel.PluginMain(cmdAdd, cmdDel)
+	skel.PluginMain(plugin{})
 }

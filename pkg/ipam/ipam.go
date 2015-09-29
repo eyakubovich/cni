@@ -25,23 +25,34 @@ import (
 	"github.com/vishvananda/netlink"
 )
 
-func ExecAdd(plugin string, netconf []byte) (*types.Result, error) {
+func ExecAdd(plugin string, netconf []byte) (*types.AddResult, error) {
 	if os.Getenv("CNI_COMMAND") != "ADD" {
 		return nil, fmt.Errorf("CNI_COMMAND is not ADD")
 	}
-	return invoke.ExecPluginWithResult(invoke.Find(plugin), netconf, invoke.ArgsFromEnv())
+	r := &types.AddResult{}
+	err := invoke.ExecPlugin(invoke.Find(plugin), netconf, invoke.ArgsFromEnv(), r)
+	return r, err
 }
 
 func ExecDel(plugin string, netconf []byte) error {
 	if os.Getenv("CNI_COMMAND") != "DEL" {
 		return fmt.Errorf("CNI_COMMAND is not DEL")
 	}
-	return invoke.ExecPluginWithoutResult(invoke.Find(plugin), netconf, invoke.ArgsFromEnv())
+	return invoke.ExecPlugin(invoke.Find(plugin), netconf, invoke.ArgsFromEnv(), nil)
+}
+
+func ExecStatus(plugin string, netconf []byte) (*types.StatusResult, error) {
+	if os.Getenv("CNI_COMMAND") != "STATUS" {
+		return nil, fmt.Errorf("CNI_COMMAND is not STATUS")
+	}
+	r := &types.StatusResult{}
+	err := invoke.ExecPlugin(invoke.Find(plugin), netconf, invoke.ArgsFromEnv(), r)
+	return r, err
 }
 
 // ConfigureIface takes the result of IPAM plugin and
 // applies to the ifName interface
-func ConfigureIface(ifName string, res *types.Result) error {
+func ConfigureIface(ifName string, res *types.AddResult) error {
 	link, err := netlink.LinkByName(ifName)
 	if err != nil {
 		return fmt.Errorf("failed to lookup %q: %v", ifName, err)

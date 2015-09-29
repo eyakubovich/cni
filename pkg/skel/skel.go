@@ -36,9 +36,19 @@ type CmdArgs struct {
 	StdinData   []byte
 }
 
+type Plugin interface {
+	Add(args *CmdArgs) error
+	Del(args *CmdArgs) error
+}
+
+type StatusPlugin interface {
+	Plugin
+	Status(args *CmdArgs) error
+}
+
 // PluginMain is the "main" for a plugin. It accepts
 // two callback functions for add and del commands.
-func PluginMain(cmdAdd, cmdDel func(_ *CmdArgs) error) {
+func PluginMain(plugin Plugin) {
 	var cmd, contID, netns, ifName, args, path string
 
 	vars := []struct {
@@ -83,10 +93,18 @@ func PluginMain(cmdAdd, cmdDel func(_ *CmdArgs) error) {
 
 	switch cmd {
 	case "ADD":
-		err = cmdAdd(cmdArgs)
+		err = plugin.Add(cmdArgs)
 
 	case "DEL":
-		err = cmdDel(cmdArgs)
+		err = plugin.Del(cmdArgs)
+
+	case "STATUS":
+		sp, ok := plugin.(StatusPlugin)
+		if ok {
+			err = sp.Status(cmdArgs)
+		} else {
+			err = fmt.Errorf("plugin does not support STATUS command")
+		}
 
 	default:
 		dieMsg("unknown CNI_COMMAND: %v", cmd)

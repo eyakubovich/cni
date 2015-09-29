@@ -15,6 +15,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -29,8 +30,9 @@ const (
 
 	DefaultNetDir = "/etc/cni/net.d"
 
-	CmdAdd = "add"
-	CmdDel = "del"
+	CmdAdd    = "add"
+	CmdDel    = "del"
+	CmdStatus = "status"
 )
 
 func main() {
@@ -66,6 +68,13 @@ func main() {
 		exit(err)
 	case CmdDel:
 		exit(cninet.DelNetwork(netconf, rt))
+	case CmdStatus:
+		s, err := cninet.NetworkStatus(netconf, rt)
+		if err != nil {
+			exit(err)
+		} else {
+			json.NewEncoder(os.Stdout).Encode(s)
+		}
 	}
 }
 
@@ -75,6 +84,7 @@ func usage() {
 	fmt.Fprintf(os.Stderr, "%s: Add or remove network interfaces from a network namespace\n", exe)
 	fmt.Fprintf(os.Stderr, "  %s %s <net> <netns>\n", exe, CmdAdd)
 	fmt.Fprintf(os.Stderr, "  %s %s <net> <netns>\n", exe, CmdDel)
+	fmt.Fprintf(os.Stderr, "  %s %s <net> <netns>\n", exe, CmdStatus)
 	os.Exit(1)
 }
 

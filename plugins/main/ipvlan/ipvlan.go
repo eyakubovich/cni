@@ -106,7 +106,9 @@ func createIpvlan(conf *NetConf, ifName string, netns *os.File) error {
 	})
 }
 
-func cmdAdd(args *skel.CmdArgs) error {
+type plugin struct{}
+
+func (_ plugin) Add(args *skel.CmdArgs) error {
 	n, err := loadConf(args.StdinData)
 	if err != nil {
 		return err
@@ -141,7 +143,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 	return result.Print()
 }
 
-func cmdDel(args *skel.CmdArgs) error {
+func (_ plugin) Del(args *skel.CmdArgs) error {
 	n, err := loadConf(args.StdinData)
 	if err != nil {
 		return err
@@ -157,6 +159,10 @@ func cmdDel(args *skel.CmdArgs) error {
 	})
 }
 
+func (_ plugin) Status(args *skel.CmdArgs) error {
+	return skel.CmdStatus(args)
+}
+
 func renameLink(curName, newName string) error {
 	link, err := netlink.LinkByName(curName)
 	if err != nil {
@@ -167,5 +173,5 @@ func renameLink(curName, newName string) error {
 }
 
 func main() {
-	skel.PluginMain(cmdAdd, cmdDel)
+	skel.PluginMain(plugin{})
 }

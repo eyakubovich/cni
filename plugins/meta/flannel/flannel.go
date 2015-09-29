@@ -120,6 +120,11 @@ func consumeScratchNetConf(containerID string) ([]byte, error) {
 	return ioutil.ReadFile(path)
 }
 
+func getScratchNetConf(containerID string) ([]byte, error) {
+	path := filepath.Join(stateDir, containerID)
+	return ioutil.ReadFile(path)
+}
+
 func delegateAdd(cid string, netconf map[string]interface{}) error {
 	netconfBytes, err := json.Marshal(netconf)
 	if err != nil {
@@ -149,7 +154,9 @@ func isString(i interface{}) bool {
 	return ok
 }
 
-func cmdAdd(args *skel.CmdArgs) error {
+type plugin struct{}
+
+func (_ plugin) Add(args *skel.CmdArgs) error {
 	n, err := loadFlannelNetConf(args.StdinData)
 	if err != nil {
 		return err
@@ -210,7 +217,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 	return delegateAdd(args.ContainerID, n.Delegate)
 }
 
-func cmdDel(args *skel.CmdArgs) error {
+func (_ plugin) Del(args *skel.CmdArgs) error {
 	netconfBytes, err := consumeScratchNetConf(args.ContainerID)
 	if err != nil {
 		return err
@@ -224,6 +231,25 @@ func cmdDel(args *skel.CmdArgs) error {
 	return ipam.ExecDel(n.Type, netconfBytes)
 }
 
+func (_ plugin) Status(args *skel.CmdArgs) error {
+	netconfBytes, err := getScratchNetConf(args.ContainerID)
+	if err != nil {
+		return err
+	}
+
+	n := &types.NetConf{}
+	if err = json.Unmarshal(netconfBytes, n); err != nil {
+		return fmt.Errorf("failed to parse netconf: %v", err)
+	}
+
+	res, err := ipam.ExecStatus(n.Type, netconfBytes)
+	if err != nil {
+		return err
+	}
+
+	return res.Print()
+}
+
 func main() {
-	skel.PluginMain(cmdAdd, cmdDel)
+	skel.PluginMain(plugin{})
 }

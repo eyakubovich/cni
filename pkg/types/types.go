@@ -64,12 +64,12 @@ type NetConf struct {
 }
 
 // Result is what gets returned from the plugin (via stdout) to the caller
-type Result struct {
+type AddResult struct {
 	IP4 *IPConfig `json:"ip4,omitempty"`
 	IP6 *IPConfig `json:"ip6,omitempty"`
 }
 
-func (r *Result) Print() error {
+func (r *AddResult) Print() error {
 	return prettyPrint(r)
 }
 
@@ -97,6 +97,36 @@ func (e *Error) Error() string {
 
 func (e *Error) Print() error {
 	return prettyPrint(e)
+}
+
+// Result is what gets returned from the plugin (via stdout) to the caller
+type StatusResult struct {
+	IP4 net.IPNet
+	IP6 net.IPNet
+}
+
+func (s *StatusResult) MarshalJSON() ([]byte, error) {
+	sr := statusResult{
+		IP4: IPNet(s.IP4),
+		IP6: IPNet(s.IP4),
+	}
+
+	return json.Marshal(sr)
+}
+
+func (s *StatusResult) UnmarshalJSON(data []byte) error {
+	sr := statusResult{}
+	if err := json.Unmarshal(data, &sr); err != nil {
+		return err
+	}
+
+	s.IP4 = net.IPNet(sr.IP4)
+	s.IP6 = net.IPNet(sr.IP6)
+	return nil
+}
+
+func (r *StatusResult) Print() error {
+	return prettyPrint(r)
 }
 
 // net.IPNet is not JSON (un)marshallable so this duality is needed
@@ -154,6 +184,11 @@ func (r *Route) MarshalJSON() ([]byte, error) {
 	}
 
 	return json.Marshal(rt)
+}
+
+type statusResult struct {
+	IP4 IPNet `json:"ip4,omitempty"`
+	IP6 IPNet `json:"ip6,omitempty"`
 }
 
 func prettyPrint(obj interface{}) error {

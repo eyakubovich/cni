@@ -168,7 +168,9 @@ func setupBridge(n *NetConf) (*netlink.Bridge, error) {
 	return br, nil
 }
 
-func cmdAdd(args *skel.CmdArgs) error {
+type plugin struct{}
+
+func (_ plugin) Add(args *skel.CmdArgs) error {
 	n, err := loadNetConf(args.StdinData)
 	if err != nil {
 		return err
@@ -229,7 +231,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 	return result.Print()
 }
 
-func cmdDel(args *skel.CmdArgs) error {
+func (_ plugin) Del(args *skel.CmdArgs) error {
 	n, err := loadNetConf(args.StdinData)
 	if err != nil {
 		return err
@@ -245,6 +247,10 @@ func cmdDel(args *skel.CmdArgs) error {
 	})
 }
 
+func (_ plugin) Status(args *skel.CmdArgs) error {
+	return skel.CmdStatus(args)
+}
+
 func main() {
-	skel.PluginMain(cmdAdd, cmdDel)
+	skel.PluginMain(plugin{})
 }

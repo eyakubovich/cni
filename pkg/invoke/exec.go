@@ -41,19 +41,15 @@ func pluginErr(err error, output []byte) error {
 	return err
 }
 
-func ExecPluginWithResult(pluginPath string, netconf []byte, args CNIArgs) (*types.Result, error) {
+func ExecPlugin(pluginPath string, netconf []byte, args CNIArgs, result interface{}) error {
 	stdoutBytes, err := execPlugin(pluginPath, netconf, args)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	res := &types.Result{}
-	err = json.Unmarshal(stdoutBytes, res)
-	return res, err
-}
-
-func ExecPluginWithoutResult(pluginPath string, netconf []byte, args CNIArgs) error {
-	_, err := execPlugin(pluginPath, netconf, args)
+	if result != nil {
+		err = json.Unmarshal(stdoutBytes, result)
+	}
 	return err
 }
 

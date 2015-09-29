@@ -34,22 +34,32 @@ type NetworkConfig struct {
 }
 
 type CNI interface {
-	AddNetwork(net *NetworkConfig, rt *RuntimeConf) (*types.Result, error)
+	AddNetwork(net *NetworkConfig, rt *RuntimeConf) (*types.AddResult, error)
 	DelNetwork(net *NetworkConfig, rt *RuntimeConf) error
+	NetworkStatus(net *NetworkConfig, rt *RuntimeConf) (*types.StatusResult, error)
 }
 
 type CNIConfig struct {
 	Path []string
 }
 
-func (c *CNIConfig) AddNetwork(net *NetworkConfig, rt *RuntimeConf) (*types.Result, error) {
+func (c *CNIConfig) AddNetwork(net *NetworkConfig, rt *RuntimeConf) (*types.AddResult, error) {
 	pluginPath := invoke.FindInPath(net.Network.Type, c.Path)
-	return invoke.ExecPluginWithResult(pluginPath, net.Bytes, c.args("ADD", rt))
+	result := &types.AddResult{}
+	err := invoke.ExecPlugin(pluginPath, net.Bytes, c.args("ADD", rt), result)
+	return result, err
 }
 
 func (c *CNIConfig) DelNetwork(net *NetworkConfig, rt *RuntimeConf) error {
 	pluginPath := invoke.FindInPath(net.Network.Type, c.Path)
-	return invoke.ExecPluginWithoutResult(pluginPath, net.Bytes, c.args("DEL", rt))
+	return invoke.ExecPlugin(pluginPath, net.Bytes, c.args("DEL", rt), nil)
+}
+
+func (c *CNIConfig) NetworkStatus(net *NetworkConfig, rt *RuntimeConf) (*types.StatusResult, error) {
+	pluginPath := invoke.FindInPath(net.Network.Type, c.Path)
+	result := &types.StatusResult{}
+	err := invoke.ExecPlugin(pluginPath, net.Bytes, c.args("STATUS", rt), result)
+	return result, err
 }
 
 // =====

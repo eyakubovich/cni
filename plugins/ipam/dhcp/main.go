@@ -30,19 +30,21 @@ func main() {
 	if len(os.Args) > 1 && os.Args[1] == "daemon" {
 		runDaemon()
 	} else {
-		skel.PluginMain(cmdAdd, cmdDel)
+		skel.PluginMain(plugin{})
 	}
 }
 
-func cmdAdd(args *skel.CmdArgs) error {
-	result := types.Result{}
+type plugin struct{}
+
+func (_ plugin) Add(args *skel.CmdArgs) error {
+	result := types.AddResult{}
 	if err := rpcCall("DHCP.Allocate", args, &result); err != nil {
 		return err
 	}
 	return result.Print()
 }
 
-func cmdDel(args *skel.CmdArgs) error {
+func (_ plugin) Del(args *skel.CmdArgs) error {
 	result := struct{}{}
 	if err := rpcCall("DHCP.Release", args, &result); err != nil {
 		return fmt.Errorf("error dialing DHCP daemon: %v", err)
